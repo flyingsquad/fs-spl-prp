@@ -71,8 +71,9 @@ export class SpellPrep {
 				case 'Cleric':
 				case 'Druid':
 					mod = actor.system.abilities[c.system.spellcasting.ability].mod;
+					let value = actor.system.abilities[c.system.spellcasting.ability].value;
 					limit = c.system.levels + mod;
-					classList += `${limit}: ${c.name} ${c.system.levels} + ${mod} (${c.system.spellcasting.ability})`;
+					classList += `${c.name} ${c.system.levels} + ${mod} (${c.system.spellcasting.ability} ${value})`;
 					break;
 				case 'Artificer':
 				case 'Paladin':
@@ -115,70 +116,76 @@ export class SpellPrep {
 				spells.forEach((spell) => {
 					let checked = "";
 					if (spell.system.preparation.mode == 'prepared') {
+						if (levcnt++ % ncols == 0)
+							spellTxt += `<tr>\n`;
 						this.totalSpells++;
 						if (spell.system.preparation.prepared) {
 							checked = ' checked';
 							count++;
 						}
 
-						let text = `<div class="vcenter">
+						let text = `<td class="vcenter">
 							<input class="checkbox" type="checkbox" id="${this.totalSpells}" name="spell${this.totalSpells}" value="${spell.uuid}"${checked}></input>
 							<label class="label" for="spell${this.totalSpells}"><a class="control showuuid" uuid="${spell.uuid}">${spell.name}</a></label>
-							</div>\n`;
+							</td>\n`;
 						spellTxt += text;
-						levcnt++;
+						if (levcnt % ncols == 0)
+							spellTxt += `<tr>\n`;
 					}
 				});
 				if (spellTxt) {
-					spellList += "<div>\n";
-					spellList += `<div style="display: flex; flex-flow: row wrap">`;
 					spellList += `<p><b>Level ${level}</b></p>`;
-					spellList += `</div>`;
 					
-					spellList += `<div style="padding-bottom: 12px; display: flex; flex-flow: row wrap">`;
+					spellList += `<table style="padding-bottom: 12px;">`;
 					spellList += spellTxt;
-					for (let i = 0; i < levcnt % ncols; i++)
-						spellList += `<div class="vcenter"></div>`;
-					spellList += `</div>`;
-					spellList += `</div>`;
+					if (levcnt % ncols != 0) {
+						for (let i = 0; i < ncols - levcnt % ncols; i++)
+							spellList += `<td></td>\n`;
+						spellList += `</tr>\n`;
+					}
+					spellList += `</table>\n`;
 				}
 			}
 
 			let colwidth = Math.trunc(100 / Math.min(ncols, 1+Math.trunc(this.totalSpells/10)));
 
 			content = `<style>
-				desc: {
+				desc {
 					font-size: 12px;
 				}
-				.choices: {
-					font-size: 12px;
-					border-top: 1pt solid;
-					border-bottom: 1pt solid;
-					border-color: maroon;
+				.choices {
+					font-size: 16px;
+					text-color: maroon;
+					font-style: bold;
 				}
 				.vcenter {
-					align-items: center;
-					display: flex;
-					flex-grow: 1;
+					vertical-align: middle;
 					width: ${colwidth}%;
+					padding: 0px;
 				}
 				.checkbox {
+					vertical-align: middle;
 					font-size: 12px;
-					flex-grow: 1;
+					padding: 0px;
 				}
 				.label {
 					font-size: 12px;
-					flex-grow: 4;
+					vertical-align: middle;
+					padding: 0px;
+				}
+				td, table, tr {
+					background-color: rgba(0, 0, 0, 0);
+					border: 0px;
+					padding: 0px;
+					vertical-align: middle;
 				}
 			</style>\n`;
 
-			content += `<div class="desc"><b>${classList}</b><br>Check the spells you wish to prepare. Cantrips, at-will, innate, always prepared and pact spells are not listed.</div>`;
+			content += `<p class="desc">Check the spells you wish to prepare. Cantrips, at-will, innate, always prepared and pact spells are not listed.</p>`;
 
-			if (limit) {
-				content += `<p class="modesto choices">Spells prepared: <span id="count">${count}</span> of <span id="limit">${limit}</span></p>`;
-			}
+			content += `<p class="choices">Spells prepared: <span id="count">${count}</span> of <span id="limit">${limit}</span>: ${classList}</p>`;
 
-			content += `<div style="height: 600px; padding-bottom: 12px; display: flex; flex-flow: row wrap; overflow-y: scroll">`;
+			content += `<div style="height: 600px; padding-bottom: 12px; overflow-y: scroll">`;
 			content += spellList;
 			content += `</div><br>`;
 		}
