@@ -1,0 +1,31 @@
+{
+	"id": "fs-spl-prp",
+	"title": "Prepare Spells",
+	"description": "Prepare spells for DnD5e.",
+	"authors": [
+	{
+		"name": "flying-squad"
+	}
+	],
+	"compatibility": {
+		"minimum": "11",
+		"verified": "11"
+	},
+	"esmodules": ["fs-spl-prp.js"],
+	"relationships": {
+		"systems": [
+			{
+				"id": "dnd5e",
+				"type": "system",
+				"compatibility": {
+					"minimum": "3.1",
+					"maximum": "3.3"
+				}
+			}
+		]
+	},
+	"version": "1.0.0",
+	"download": "https://github.com/flyingsquad/fs-spl-prp/archive/refs/tags/v1.0.0.zip",
+	"url": "https://github.com/flyingsquad/fs-spl-prp",
+	"manifest": "https://raw.githubusercontent.com/flyingsquad/fs-spl-prp/main/module.json"
+}
