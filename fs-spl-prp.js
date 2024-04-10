@@ -49,9 +49,11 @@ function handleChoiceRender(sp, html) {
 	});
 }
 
+
 export class SpellPrep {
 
 	totalSpells = 0;
+	castClasses = [];
 
 	listSpells(actor) {
 		
@@ -61,6 +63,13 @@ export class SpellPrep {
 		let classList = '';
 
 		let limit = 0;
+		let cobj;
+		let abbreviations = {};
+		abbreviations['Artificer'] = 'Art';
+		abbreviations['Cleric'] = 'Clr';
+		abbreviations['Druid'] = 'Drd';
+		abbreviations['Paladin'] = 'Pal';
+		abbreviations['Wizard'] = 'Wiz';
 
 		classes.forEach((c) => {
 			
@@ -74,15 +83,26 @@ export class SpellPrep {
 					let value = actor.system.abilities[c.system.spellcasting.ability].value;
 					limit = c.system.levels + mod;
 					classList += `${c.name} ${c.system.levels} + ${mod} (${c.system.spellcasting.ability} ${value})`;
+
+					cobj = {name: c.name, limit: limit, level: c.system.levels, ability: c.system.spellcasting.ability, mod: mod};
+					cobj.abbrev = abbreviations[c.name];
+					this.castClasses.push(cobj);
 					break;
+
 				case 'Artificer':
 				case 'Paladin':
 					mod = actor.system.abilities[c.system.spellcasting.ability].mod;
 					limit = Math.max(1, Math.trunc(c.system.levels / 2) + mod);
 					classList += `${limit}: ${c.name} ${c.system.levels} + ${mod} (${c.system.spellcasting.ability})`;
+
+					cobj = {name: c.name, limit: limit, level: c.system.levels, ability: c.system.spellcasting.ability, mod: mod};
+					cobj.abbrev = abbreviations[c.name];
+					this.castClasses.push(cobj);
 					break;
+
 				default:
 					classList += `${c.name} has no spell preparation.`;
+					break;
 				}
 			}
 		});
@@ -96,7 +116,7 @@ export class SpellPrep {
 			let count = 0;
 			
 			let spellList = '';
-			let ncols = 4;
+			let ncols = this.castClasses.length > 1 ? 3 : 4;
 
 			for (let level = 1; level <= 9; level++) {
 				let spellTxt = "";
@@ -124,10 +144,22 @@ export class SpellPrep {
 							count++;
 						}
 
+						let classSel = "";
+						if (this.castClasses.length > 1) {
+							classSel = `\n<select id="cls${this.totalSpells}">\n`;
+							for (let i = 0; i < this.castClasses.length; i++) {
+								let selected = '';
+								let cls = spell.flags['fs-spl-prp']?.cls;
+								if (cls == this.castClasses[i].abbrev)
+									selected = ' selected';
+								classSel += `<option>${this.castClasses[i].abbrev}${selected}</option>`;
+							}
+							classSel += `</select>\n`;
+						}
 						let text = `<td class="vcenter">
-							<input class="checkbox" type="checkbox" id="${this.totalSpells}" name="spell${this.totalSpells}" value="${spell.uuid}"${checked}></input>
-							<label class="label" for="spell${this.totalSpells}"><a class="control showuuid" uuid="${spell.uuid}">${spell.name}</a></label>
-							</td>\n`;
+<input class="checkbox" type="checkbox" id="${this.totalSpells}" name="spell${this.totalSpells}" value="${spell.uuid}"${checked}></input>${classSel}
+<label class="label" for="spell${this.totalSpells}"><a class="control showuuid" uuid="${spell.uuid}">${spell.name}</a></label>
+</td>\n`;
 						spellTxt += text;
 						if (levcnt % ncols == 0)
 							spellTxt += `<tr>\n`;
@@ -147,7 +179,7 @@ export class SpellPrep {
 				}
 			}
 
-			let colwidth = Math.trunc(100 / Math.min(ncols, 1+Math.trunc(this.totalSpells/10)));
+			let colwidth = Math.trunc(100 / ncols);
 
 			content = `<style>
 				desc {
@@ -163,7 +195,7 @@ export class SpellPrep {
 					width: ${colwidth}%;
 					padding: 0px;
 				}
-				.checkbox {
+				.checkbox, select {
 					vertical-align: middle;
 					font-size: 12px;
 					padding: 0px;
