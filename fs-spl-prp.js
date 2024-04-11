@@ -12,48 +12,98 @@ async function doDialog(dlg, msg, options) {
 	return result;
 }
 
-function handleChoiceRender(sp, html) {
-	html.on('change', html, (e) => {
-		// Limit number of checked items, handle clicking items to show compendium data.
-		let html = e.data;
-		switch (e.target.nodeName) {
-		case 'INPUT':
-			if (e.target.type == 'checkbox') {
-				let lim = html.find("#limit");
-				let limit = lim[0].innerText;
-				limit = parseInt(limit);
-				let cnt = html.find("#count");
-				let count = parseInt(cnt[0].innerText);
-				if (e.target.checked)
-					count++;
-				else
-					count--;
-				if (count > limit) {
-					e.target.checked = false;
-					count--;
-				}
-				cnt.text(count);
-			}
-			break;
-		}
-	});
-	html.on("click", ".showuuid", async (event) => {
-		// Open the window for the item whose UUID was clicked.
-		event.preventDefault();
-		const uuid = event.currentTarget.getAttribute("uuid");
-		if (!uuid) return;
-		const item = await fromUuid(uuid);
-		if (item) {
-			item.sheet.render(true);
-		}
-	});
-}
-
 
 export class SpellPrep {
 
 	totalSpells = 0;
 	castClasses = [];
+	curClass = "";
+	
+	recount(sp, html) {
+		let i;
+		for (i = 0; i < this.castClasses.length; i++)
+			this.castClasses[i].count = 0;
+
+		for (i = 1; i <= this.totalSpells; i++) {
+			let ctrl = html.find(`#${i}`);
+			if (!ctrl)
+				continue;
+			if (!ctrl[0].checked)
+				continue;
+			if (this.castClasses.length == 1)
+				this.castClasses[0].count++;
+			else {
+				let ctrl = html.find(`#cls${i}`);
+				if (ctrl) {
+					let cls = ctrl[0].value;
+					let c = this.castClasses.find(cc => cc.abbrev == cls);
+					if (c)
+						c.count++;
+				}
+			}
+		}
+		
+		for (i = 0; i < this.castClasses.length; i++) {
+			let cnt = html.find(`#count${this.castClasses[i].abbrev}`);
+			if (cnt)
+				cnt.text(this.castClasses[i].count);
+		}		
+	}
+
+	handleChoiceRender(sp, html) {
+		html.on('change', html, (e) => {
+			// Limit number of checked items, handle clicking items to show compendium data.
+			let html = e.data;
+			switch (e.target.nodeName) {
+			case 'INPUT':
+				if (e.target.type == 'checkbox') {
+					let cls;
+					if (this.castClasses.length > 1) {
+						// Get the class assigned to the spell.
+						let ctrl = html.find(`#cls${e.target.id}`);
+						if (ctrl)
+							cls = ctrl[0].value;
+					} else {
+						// Only one class for the spell.
+						cls = this.castClasses[0].abbrev;
+					}
+					let lim = html.find(`#limit${cls}`);
+					let limit = lim[0].innerText;
+					limit = parseInt(limit);
+					let cnt = html.find(`#count${cls}`);
+					let count = parseInt(cnt[0].innerText);
+					if (e.target.checked)
+						count++;
+					else
+						count--;
+					if (count > limit) {
+						e.target.checked = false;
+						count--;
+					}
+					cnt.text(count);
+				}
+				break;
+			case 'SELECT':
+				// Changed the class. Just recount everything.
+				// FIX: optimize by not recounting if not checked.
+				let id = e.target.id;
+				let value = e.target.value;
+				this.recount(sp, html);
+				break;
+			}
+		});
+		html.on("click", ".showuuid", async (event) => {
+			// Open the window for the item whose UUID was clicked.
+			event.preventDefault();
+			const uuid = event.currentTarget.getAttribute("uuid");
+			if (!uuid) return;
+			const item = await fromUuid(uuid);
+			if (item) {
+				item.sheet.render(true);
+			}
+		});
+	}
+
 
 	listSpells(actor) {
 		
@@ -75,28 +125,33 @@ export class SpellPrep {
 			
 			if (c.system.spellcasting.ability) {
 				let mod;
+				let abil;
 				switch (c.name) {
 				case 'Wizard':
 				case 'Cleric':
 				case 'Druid':
+					abil = actor.system.abilities[c.system.spellcasting.ability].value;
 					mod = actor.system.abilities[c.system.spellcasting.ability].mod;
 					let value = actor.system.abilities[c.system.spellcasting.ability].value;
 					limit = c.system.levels + mod;
 					classList += `${c.name} ${c.system.levels} + ${mod} (${c.system.spellcasting.ability} ${value})`;
 
-					cobj = {name: c.name, limit: limit, level: c.system.levels, ability: c.system.spellcasting.ability, mod: mod};
+					cobj = {name: c.name, limit: limit, level: c.system.levels, ability: c.system.spellcasting.ability, abil: abil, mod: mod, count: 0};
 					cobj.abbrev = abbreviations[c.name];
+					this.curClass = cobj.abbrev;
 					this.castClasses.push(cobj);
 					break;
 
 				case 'Artificer':
 				case 'Paladin':
+					abil = actor.system.abilities[c.system.spellcasting.ability].value;
 					mod = actor.system.abilities[c.system.spellcasting.ability].mod;
 					limit = Math.max(1, Math.trunc(c.system.levels / 2) + mod);
 					classList += `${limit}: ${c.name} ${c.system.levels} + ${mod} (${c.system.spellcasting.ability})`;
 
-					cobj = {name: c.name, limit: limit, level: c.system.levels, ability: c.system.spellcasting.ability, mod: mod};
+					cobj = {name: c.name, limit: limit, level: c.system.levels, ability: c.system.spellcasting.ability, abil: abil, mod: mod, count: 0};
 					cobj.abbrev = abbreviations[c.name];
+					this.curClass = cobj.abbrev;
 					this.castClasses.push(cobj);
 					break;
 
@@ -139,9 +194,14 @@ export class SpellPrep {
 						if (levcnt++ % ncols == 0)
 							spellTxt += `<tr>\n`;
 						this.totalSpells++;
+						let cls = spell.flags['fs-spl-prp']?.cls;
+						if (!cls)
+							cls = this.castClasses[0].abbrev;
 						if (spell.system.preparation.prepared) {
+							let c = this.castClasses.find(cc => cc.abbrev == cls);
+							if (c)
+								c.count++;
 							checked = ' checked';
-							count++;
 						}
 
 						let classSel = "";
@@ -149,10 +209,9 @@ export class SpellPrep {
 							classSel = `\n<select id="cls${this.totalSpells}">\n`;
 							for (let i = 0; i < this.castClasses.length; i++) {
 								let selected = '';
-								let cls = spell.flags['fs-spl-prp']?.cls;
 								if (cls == this.castClasses[i].abbrev)
 									selected = ' selected';
-								classSel += `<option>${this.castClasses[i].abbrev}${selected}</option>`;
+								classSel += `<option${selected}>${this.castClasses[i].abbrev}</option>`;
 							}
 							classSel += `</select>\n`;
 						}
@@ -213,9 +272,15 @@ export class SpellPrep {
 				}
 			</style>\n`;
 
-			content += `<p class="desc">Check the spells you wish to prepare. Cantrips, at-will, innate, always prepared and pact spells are not listed.</p>`;
+			content += `<p class="desc">Check the spells you wish to prepare. Cantrips, at-will, innate, always prepared and pact spells are not listed.</p>\n`;
+			if (this.castClasses.length > 1) {
+				content += `<p class="desc">To change the class the spell is memorized for, click the class dropdown.</p>\n`;
+			}
 
-			content += `<p class="choices">Spells prepared: <span id="count">${count}</span> of <span id="limit">${limit}</span>: ${classList}</p>`;
+			for (let i = 0; i < this.castClasses.length; i++) {
+				let c = this.castClasses[i];
+				content += `<p class="choices">${c.name} spells prepared: <span id="count${c.abbrev}">${c.count}</span> of <span id="limit${c.abbrev}">${c.limit}</span> -- level ${c.level} + ${c.mod} (${dnd5e.config.abilities[c.ability].label} ${c.abil})</p>\n`;
+			}
 
 			content += `<div style="height: 600px; padding-bottom: 12px; overflow-y: scroll">`;
 			content += spellList;
@@ -228,7 +293,7 @@ export class SpellPrep {
 
 	async prepareSpells(actor) {
 		
-		async function prepSpells(actor, html, totalSpells) {
+		async function prepSpells(sp, actor, html, totalSpells) {
 			let selections = [];
 			for (let i = 1; i <= totalSpells; i++) {
 				let cb = html.find(`#${i}`);
@@ -237,6 +302,21 @@ export class SpellPrep {
 				let arr = cb[0].value.split(".");
 				let id = arr[arr.length - 1];
 				let spell = actor.items.find(s => s.id == id);
+
+				if (spell && sp.castClasses.length > 1) {
+					// If two classes prepare spells remember which
+					// class has which spell.
+					let cls = html.find(`#cls${i}`);
+					if (cls) {
+						let cc = cls[0].value;
+						let spellClass = spell.getFlag('fs-spl-prp', 'cls');
+						if (cc != spellClass) {
+							await actor.updateEmbeddedDocuments("Item",
+								[{ "_id": id, [`flags.fs-spl-prp.cls`]: cc }]
+							);
+						}
+					}
+				}
 				if (spell && spell.system.preparation.prepared != cb[0].checked) {
 					await actor.updateEmbeddedDocuments("Item",
 						[{ "_id": id, "system.preparation.prepared": cb[0].checked }]
@@ -257,7 +337,7 @@ export class SpellPrep {
 			ok: {
 			  label: "Finished",
 			  callback: async (html) => {
-				  await prepSpells(actor, html, this.totalSpells);
+				  await prepSpells(this, actor, html, this.totalSpells);
 				  return true;
 			  },
 			},
@@ -269,7 +349,7 @@ export class SpellPrep {
 		  default: "ok",
 		  close: () => { return false; },
 		  render: (html) => {
-				handleChoiceRender(this, html);
+				this.handleChoiceRender(this, html);
 			 }
 		}, "", {width: 800});
 		
