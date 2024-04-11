@@ -28,7 +28,7 @@ export class SpellPrep {
 			let ctrl = html.find(`#${i}`);
 			if (!ctrl)
 				continue;
-			if (!ctrl[0].checked)
+			if (!ctrl[0]?.checked)
 				continue;
 			if (this.castClasses.length == 1)
 				this.castClasses[0].count++;
