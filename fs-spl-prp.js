@@ -188,7 +188,7 @@ export class SpellPrep {
 		let nrows = 0;
 
 		if (limit == 0) {
-			content = classList;
+			content = `<p>This character does not prepare spells</p>`;
 		} else {
 			let i = 1;
 			let count = 0;
