@@ -163,6 +163,10 @@ export class SpellPrep {
 		});
 		
 		let content;
+		let atwill = false;
+		let innate = false;
+		let always = false;
+		let pact = false;
 
 		if (limit == 0) {
 			content = classList;
@@ -190,13 +194,17 @@ export class SpellPrep {
 
 				spells.forEach((spell) => {
 					let checked = "";
-					if (spell.system.preparation.mode == 'prepared') {
-						if (levcnt++ % ncols == 0)
-							spellTxt += `<tr>\n`;
-						this.totalSpells++;
-						let cls = spell.flags['fs-spl-prp']?.cls;
-						if (!cls)
-							cls = this.castClasses[0].abbrev;
+					if (levcnt++ % ncols == 0)
+						spellTxt += `<tr>\n`;
+					this.totalSpells++;
+					let cls = spell.flags['fs-spl-prp']?.cls;
+					if (!cls)
+						cls = this.castClasses[0].abbrev;
+					let classSel = "";
+					let checkbox = "";
+
+					switch (spell.system.preparation.mode) {
+					case 'prepared':
 						if (spell.system.preparation.prepared) {
 							let c = this.castClasses.find(cc => cc.abbrev == cls);
 							if (c)
@@ -204,7 +212,6 @@ export class SpellPrep {
 							checked = ' checked';
 						}
 
-						let classSel = "";
 						if (this.castClasses.length > 1) {
 							classSel = `\n<select id="cls${this.totalSpells}">\n`;
 							for (let i = 0; i < this.castClasses.length; i++) {
@@ -215,14 +222,32 @@ export class SpellPrep {
 							}
 							classSel += `</select>\n`;
 						}
-						let text = `<td class="vcenter">
-<input class="checkbox" type="checkbox" id="${this.totalSpells}" name="spell${this.totalSpells}" value="${spell.uuid}"${checked}></input>${classSel}
-<label class="label" for="spell${this.totalSpells}"><a class="control showuuid" uuid="${spell.uuid}">${spell.name}</a></label>
-</td>\n`;
-						spellTxt += text;
-						if (levcnt % ncols == 0)
-							spellTxt += `<tr>\n`;
+						checkbox = `<input class="checkbox" type="checkbox" id="${this.totalSpells}" name="spell${this.totalSpells}" value="${spell.uuid}"${checked}></input>`;
+						break;
+					case 'always':
+						checkbox = `<span class="spelltype">&check;</span>`;
+						always = true;
+						break;
+					case 'pact':
+						checkbox = `<span class="spelltype">P</span>`;
+						pact = true;
+						break;
+					case 'atwill':
+						checkbox = `<span class="spelltype">AW</span>`;
+						atwill = true;
+						break;
+					case 'innate':
+						checkbox = `<span class="spelltype">Inn</span>`;
+						innate = true;
+						break;
+					default:
+						checkbox = `<span class="spelltype">*</span>`;
+						break;
 					}
+					let text = `<td class="vcenter">${checkbox}${classSel}<label class="label" for="spell${this.totalSpells}"><a class="control showuuid" uuid="${spell.uuid}">${spell.name}</a></label></td>\n`;
+					spellTxt += text;
+					if (levcnt % ncols == 0)
+						spellTxt += `<tr>\n`;
 				});
 				if (spellTxt) {
 					spellList += `<p><b>Level ${level}</b></p>`;
@@ -264,6 +289,13 @@ export class SpellPrep {
 					vertical-align: middle;
 					padding: 0px;
 				}
+				.spelltype {
+					display: inline-block;
+					width: 30px;
+					font-size: 12px;
+					text-align: center;
+					font-weight: bold;
+				}
 				td, table, tr {
 					background-color: rgba(0, 0, 0, 0);
 					border: 0px;
@@ -272,9 +304,22 @@ export class SpellPrep {
 				}
 			</style>\n`;
 
-			content += `<p class="desc">Check the spells you wish to prepare. Cantrips, at-will, innate, always prepared and pact spells are not listed.</p>\n`;
+			content += `<p class="desc">Check the spells you wish to prepare.</p>\n`;
 			if (this.castClasses.length > 1) {
 				content += `<p class="desc">To change the class the spell is memorized for, click the class dropdown.</p>\n`;
+			}
+			if (atwill || pact || innate || always) {
+				content += `<p>Spells that are not prepared: `;
+				let arr = [];
+				if (pact)
+					arr.push(`<b>P</b> Pact magic`);
+				if (atwill)
+					arr.push(`<b>AW</b> Cast at-will`);
+				if (innate)
+					arr.push(`<b>Inn</b> Innate spell`);
+				if (always)
+					arr.push(`<b>&check;</b> Always prepared`);
+				content += arr.join(', ') + `</p>\n`;
 			}
 
 			for (let i = 0; i < this.castClasses.length; i++) {
@@ -331,7 +376,7 @@ export class SpellPrep {
 		let content = this.listSpells(actor);
 	
 		let result = await doDialog({
-		  title: "Prepare Spells",
+		  title: `${actor.name}: Prepare Spells`,
 		  content: content,
 		  buttons: {
 			ok: {
