@@ -12,6 +12,19 @@ async function doDialog(dlg, msg, options) {
 	return result;
 }
 
+async function showHelp(sp) {
+	const htmlContent = await renderTemplate('/modules/fs-spl-prp/help.hbs');
+	await doDialog({
+		title: "Prepare Spells Help",
+		content: htmlContent,
+		buttons: {
+			ok: {
+				label: "OK",
+				callback: (html) => { ; }
+			},
+		}
+	}, "", {width: 600})	
+}
 
 export class SpellPrep {
 
@@ -102,6 +115,10 @@ export class SpellPrep {
 				item.sheet.render(true);
 			}
 		});
+		html.on("click", ".showhelp", async (event) => {
+			showHelp(sp);
+			event.preventDefault();
+		});
 	}
 
 
@@ -167,6 +184,8 @@ export class SpellPrep {
 		let innate = false;
 		let always = false;
 		let pact = false;
+		
+		let nrows = 0;
 
 		if (limit == 0) {
 			content = classList;
@@ -194,8 +213,10 @@ export class SpellPrep {
 
 				spells.forEach((spell) => {
 					let checked = "";
-					if (levcnt++ % ncols == 0)
+					if (levcnt++ % ncols == 0) {
 						spellTxt += `<tr>\n`;
+						nrows++;
+					}
 					this.totalSpells++;
 					let cls = spell.flags['fs-spl-prp']?.cls;
 					if (!cls)
@@ -251,6 +272,7 @@ export class SpellPrep {
 				});
 				if (spellTxt) {
 					spellList += `<p><b>Level ${level}</b></p>`;
+					nrows++;
 					
 					spellList += `<table style="padding-bottom: 12px;">`;
 					spellList += spellTxt;
@@ -296,6 +318,9 @@ export class SpellPrep {
 					text-align: center;
 					font-weight: bold;
 				}
+				.showhelp {
+					font-weight: bold;
+				}
 				td, table, tr {
 					background-color: rgba(0, 0, 0, 0);
 					border: 0px;
@@ -304,22 +329,9 @@ export class SpellPrep {
 				}
 			</style>\n`;
 
-			content += `<p class="desc">Check the spells you wish to prepare.</p>\n`;
+			content += `<p class="desc">Check the spells you wish to prepare (<a class="control showhelp">Click Here for Help</a>)</p>\n`;
 			if (this.castClasses.length > 1) {
 				content += `<p class="desc">To change the class the spell is memorized for, click the class dropdown.</p>\n`;
-			}
-			if (atwill || pact || innate || always) {
-				content += `<p>Spells that are not prepared: `;
-				let arr = [];
-				if (pact)
-					arr.push(`<b>P</b> Pact magic`);
-				if (atwill)
-					arr.push(`<b>AW</b> Cast at-will`);
-				if (innate)
-					arr.push(`<b>Inn</b> Innate spell`);
-				if (always)
-					arr.push(`<b>&check;</b> Always prepared`);
-				content += arr.join(', ') + `</p>\n`;
 			}
 
 			for (let i = 0; i < this.castClasses.length; i++) {
@@ -327,7 +339,9 @@ export class SpellPrep {
 				content += `<p class="choices">${c.name} spells prepared: <span id="count${c.abbrev}">${c.count}</span> of <span id="limit${c.abbrev}">${c.limit}</span> -- level ${c.level} + ${c.mod} (${dnd5e.config.abilities[c.ability].label} ${c.abil})</p>\n`;
 			}
 
-			content += `<div style="height: 600px; padding-bottom: 12px; overflow-y: scroll">`;
+			const rowheight = 32;
+			let height = Math.min(600, rowheight * nrows);
+			content += `<div style="height: ${height}px; padding-bottom: 12px; overflow-y: scroll">`;
 			content += spellList;
 			content += `</div><br>`;
 		}
