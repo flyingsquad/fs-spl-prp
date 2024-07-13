@@ -163,7 +163,7 @@ export class SpellPrep {
 				case 'Paladin':
 					abil = actor.system.abilities[c.system.spellcasting.ability].value;
 					mod = actor.system.abilities[c.system.spellcasting.ability].mod;
-					limit = Math.max(1, Math.trunc(c.system.levels / 2) + mod);
+					limit = Math.max(1, Math.trunc(c.system.levels / 2)) + mod;
 					classList += `${limit}: ${c.name} ${c.system.levels} + ${mod} (${c.system.spellcasting.ability})`;
 
 					cobj = {name: c.name, limit: limit, level: c.system.levels, ability: c.system.spellcasting.ability, abil: abil, mod: mod, count: 0};

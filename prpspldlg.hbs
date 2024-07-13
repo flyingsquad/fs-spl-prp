@@ -1,0 +1,48 @@
+<style>
+	desc {
+		font-size: 12px;
+	}
+	.choices {
+		font-size: 16px;
+		text-color: maroon;
+		font-style: bold;
+	}
+	.vcenter {
+		vertical-align: middle;
+		width: ${colwidth}%;
+		padding: 0px;
+	}
+	.checkbox, select {
+		vertical-align: middle;
+		font-size: 12px;
+		padding: 0px;
+	}
+	.label {
+		font-size: 12px;
+		vertical-align: middle;
+		padding: 0px;
+	}
+	.spelltype {
+		display: inline-block;
+		width: 30px;
+		font-size: 12px;
+		text-align: center;
+		font-weight: bold;
+	}
+	.showhelp {
+		font-weight: bold;
+	}
+	td, table, tr {
+		background-color: rgba(0, 0, 0, 0);
+		border: 0px;
+		padding: 0px;
+		vertical-align: middle;
+	}
+</style>
+
+<p class="desc">Check the spells you wish to prepare (<a class="control showhelp">Click Here for Help</a>)</p>
+<p class="desc">To change the class the spell is memorized for, click the class dropdown.</p>
+{{{spellcounts}}}
+<div style="height: {{height}}px; padding-bottom: 12px; overflow-y: scroll">
+{{{spellList}}}
+</div><br>
