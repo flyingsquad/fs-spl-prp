@@ -9,7 +9,7 @@
 	],
 	"compatibility": {
 		"minimum": "11",
-		"verified": "11"
+		"verified": "12"
 	},
 	"esmodules": ["fs-spl-prp.js"],
 	"relationships": {
@@ -19,13 +19,13 @@
 				"type": "system",
 				"compatibility": {
 					"minimum": "3.1",
-					"maximum": "3.3"
+					"maximum": "3.3.0"
 				}
 			}
 		]
 	},
-	"version": "1.0.7",
-	"download": "https://github.com/flyingsquad/fs-spl-prp/archive/refs/tags/v1.0.7.zip",
+	"version": "1.0.8",
+	"download": "https://github.com/flyingsquad/fs-spl-prp/archive/refs/tags/v1.0.8.zip",
 	"url": "https://github.com/flyingsquad/fs-spl-prp",
 	"manifest": "https://raw.githubusercontent.com/flyingsquad/fs-spl-prp/main/module.json"
 }
