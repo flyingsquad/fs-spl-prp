@@ -19,13 +19,13 @@
 				"type": "system",
 				"compatibility": {
 					"minimum": "3.1",
-					"maximum": "3.3.0"
+					"maximum": "3.4"
 				}
 			}
 		]
 	},
-	"version": "1.0.8",
-	"download": "https://github.com/flyingsquad/fs-spl-prp/archive/refs/tags/v1.0.8.zip",
+	"version": "1.0.9",
+	"download": "https://github.com/flyingsquad/fs-spl-prp/archive/refs/tags/v1.0.9.zip",
 	"url": "https://github.com/flyingsquad/fs-spl-prp",
 	"manifest": "https://raw.githubusercontent.com/flyingsquad/fs-spl-prp/main/module.json"
 }
